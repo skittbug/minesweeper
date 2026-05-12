@@ -113,9 +113,9 @@ void board(struct ncplane* n, int height, int width, int gameboard[height][width
  */
 void count(struct ncplane* n, int bombs, int flags) {
     ncplane_erase(n);
-    ncplane_set_fg_rgb(n, 0x000000); // black for bombs
+    ncplane_set_fg_rgb(n, 0x000000);
     ncplane_printf_yx(n, 4, 1, "Bombs: %d", bombs);
-    ncplane_set_fg_rgb(n, 0x0000FF); // blue for flags
+    ncplane_set_fg_rgb(n, 0x0000FF);
     ncplane_printf_yx(n, 6, 1, "Flags: %d", flags);
 }
 
@@ -172,7 +172,6 @@ int size(struct notcurses* nc, struct ncplane* stdn, int* height, int* width, in
             *height = 16; *width = 30; *bombs = 99; *size_mult = 1;
             return 0;
         } else if (selection == 4) {
-            // temporarily stops rendering to allow user input for custom size, will display error message if input is invalid
             notcurses_stop(nc);
             printf("Enter height: ");
             scanf("%d", height);
@@ -183,9 +182,7 @@ int size(struct notcurses* nc, struct ncplane* stdn, int* height, int* width, in
             if (*height <= 0 || *width <= 0 || *bombs <= 0 || *bombs >= *height * *width || *bombs > 1000) {
                 printf("Invalid input. Please enter positive integers for height and width, and a bomb count between 1 and height*width-1.\n");
                 return -1; 
-            
             }
-            // restart notcurses after custom input
             nc = notcurses_init(NULL, NULL);
             notcurses_mice_enable(nc, 0x7);
             stdn = notcurses_stdplane(nc);
@@ -193,13 +190,6 @@ int size(struct notcurses* nc, struct ncplane* stdn, int* height, int* width, in
         }
     }
 }
-/**
-* @brief window that displays info on the different game modes when hovering over the options in the mode select menu
-* 
-* @param nc Notcurses instance
-* @param stdn Standard plane for rendering
-* @param y Y coordinate of the hovered option
- */
 
 /**
  * @brief Display and handle game mode selection menu
@@ -292,7 +282,7 @@ int main(void)
     };
     struct ncplane* panel_plane = ncplane_create(stdn, &panel_opts);
 
-    // 0 = empty, 1-8 = numbers, 10 = bomb, 11 = correct flag, 12 = revealed empty, 13 = incorrect flag, - numbers are revealed
+    
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             gameboard[i][j] = 0;
@@ -307,7 +297,6 @@ int main(void)
             gameboard[x][y] = 10;
         }
     }
-    // calculate numbers
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             if (gameboard[i][j] != 10) {
@@ -379,8 +368,6 @@ int main(void)
     board(board_plane, height, width, gameboard, game_mode);
     count(panel_plane, bombs, flags);
     notcurses_render(nc);
-    
-    // game loop
     struct ncinput input = {0};
     while (correct_bombs < bombs) {
         if (notcurses_get_blocking(nc, &input) < 0) {
@@ -395,8 +382,6 @@ int main(void)
         if (!is_mouse_click) {
             continue;
         }
-        
-        // Process mouse clicks
         if (input.id == NCKEY_BUTTON1) {
             int y;
             int x;
@@ -415,13 +400,11 @@ int main(void)
             }
             if (gameboard[y][x] == 10) {
                 ncplane_erase(board_plane);
-                ncplane_set_fg_rgb(board_plane, 0xFF0000); // Red for game over
+                ncplane_set_fg_rgb(board_plane, 0xFF0000);
                 ncplane_putstr_yx(board_plane, 2, 2, "GAME OVER!");
                 ncplane_putstr_yx(board_plane, 4, 2, "You hit a bomb!");
                 ncplane_putstr_yx(board_plane, 6, 2, "Press Q to quit");
                 notcurses_render(nc);
-
-                // Wait for Q to quit
                 while (1) {
                     struct ncinput quit_input = {0};
                     if (notcurses_get_blocking(nc, &quit_input) < 0) break;
@@ -470,8 +453,6 @@ int main(void)
             notcurses_render(nc);
         }
     }
-
-    // Check win condition: all non-bomb cells revealed
     int total_cells = height * width;
     int revealed_cells = 0;
     for (int i = 0; i < height; i++) {
@@ -484,13 +465,11 @@ int main(void)
 
     if (correct_bombs == bombs) {
         ncplane_erase(board_plane);
-        ncplane_set_fg_rgb(board_plane, 0x00FF00); // Green for victory
+        ncplane_set_fg_rgb(board_plane, 0x00FF00); 
         ncplane_putstr_yx(board_plane, 2, 2, "CONGRATULATIONS!");
         ncplane_putstr_yx(board_plane, 4, 2, "You won the game!");
         ncplane_putstr_yx(board_plane, 6, 2, "Press Q to quit");
         notcurses_render(nc);
-
-        // Wait for Q to quit
         while (1) {
             struct ncinput quit_input = {0};
             if (notcurses_get_blocking(nc, &quit_input) < 0) break;
